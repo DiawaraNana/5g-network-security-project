@@ -1,0 +1,46 @@
+logger:
+  file:
+    path: /var/log/open5gs/amf.log
+smf:
+  sbi:
+    server:
+      - address: 127.0.0.4
+        port: 7777
+    client:
+      nrf:
+        - uri: http://127.0.0.10:7777
+  pfcp:
+    server:
+      - address: 127.0.0.4
+        port: 8805
+    client:
+      upf:
+        - address: 127.0.0.7
+  gtpc:
+    server:
+      - address: 127.0.0.4
+        port: 2123
+  gtpu:
+    server:
+      - address: 127.0.0.18
+  metrics:
+    server:
+      - address: 127.0.0.4
+        port: 9090
+  session:
+    - subnet: 10.45.0.0/16
+      gateway: 10.45.0.1
+      dnn: internet
+      s_nssai:
+        sst: 1
+
+    - subnet: 10.46.0.0/16      # ← nouveau subnet pour slice IoT
+      gateway: 10.46.0.1
+      dnn: iot
+      s_nssai:
+        sst: 2
+        sd: "000002"
+  dns:
+    - 8.8.8.8
+    - 8.8.4.4
+  mtu: 1400

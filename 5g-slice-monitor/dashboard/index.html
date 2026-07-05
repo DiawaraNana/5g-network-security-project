@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5G Slice Security Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e1a; --card: #111827; --border: #1f2937;
+  --text: #e2e8f0; --muted: #6b7280; --accent: #3b82f6;
+  --green: #10b981; --yellow: #f59e0b; --red: #ef4444;
+  --purple: #8b5cf6; --cyan: #06b6d4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+
+header{background:var(--card);border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:var(--accent);
+  border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:20px}
+.logo h1{font-size:16px;font-weight:700}
+.logo p{font-size:11px;color:var(--muted)}
+.hdr-r{display:flex;align-items:center;gap:16px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.dot.ok{animation:pulse 2s infinite}
+.dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#clock{color:var(--muted);font-size:12px;font-family:monospace}
+
+.main{padding:20px 24px;display:grid;gap:16px}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.scard{background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:16px}
+.scard .lbl{font-size:11px;color:var(--muted);margin-bottom:6px}
+.scard .val{font-size:28px;font-weight:700;line-height:1}
+.scard .sub{font-size:11px;color:var(--muted);margin-top:4px}
+.vg{color:var(--green)}.vr{color:var(--red)}
+.vy{color:var(--yellow)}.vb{color:var(--accent)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+.card{background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:16px}
+.ch{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px}
+.ct{font-size:13px;font-weight:600}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.bg{background:#064e3b;color:var(--green)}
+.br{background:#450a0a;color:var(--red)}
+.by{background:#451a03;color:var(--yellow)}
+.bb{background:#1e3a5f;color:var(--accent)}
+
+/* Slices */
+.slice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sc{border-radius:10px;padding:14px;border:1px solid var(--border)}
+.sc-embb{border-left:3px solid var(--accent)}
+.sc-iot {border-left:3px solid var(--purple)}
+.sn{font-size:13px;font-weight:700;margin-bottom:10px}
+.sm{display:flex;justify-content:space-between;margin-bottom:6px}
+.sm .k{color:var(--muted);font-size:11px}
+.sm .v{font-size:11px;font-weight:600}
+.pbar{height:4px;background:var(--border);border-radius:2px;margin-top:8px}
+.pfill{height:100%;border-radius:2px;transition:width .5s}
+
+/* Sessions list */
+.ses-list{max-height:120px;overflow-y:auto;margin-top:8px}
+.ses-item{display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.ses-item:last-child{border-bottom:none}
+.ses-ip{font-family:monospace;color:var(--cyan)}
+.ses-seid{font-family:monospace;color:var(--muted);font-size:9px}
+.ses-sl{padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700}
+.sl-embb{background:#1e3a5f;color:var(--accent)}
+.sl-iot {background:#2e1065;color:var(--purple)}
+
+/* Alerts */
+.al{max-height:300px;overflow-y:auto}
+.ai2{display:flex;gap:10px;align-items:flex-start;
+  padding:8px 0;border-bottom:1px solid var(--border)}
+.ai2:last-child{border-bottom:none}
+.asev{font-size:9px;font-weight:700;padding:2px 6px;
+  border-radius:4px;white-space:nowrap;margin-top:2px}
+.sc-crit{background:#450a0a;color:var(--red)}
+.sc-high{background:#451a03;color:var(--yellow)}
+.ab .an{font-size:12px;font-weight:600;margin-bottom:2px}
+.ab .at{font-size:10px;color:var(--muted);font-family:monospace}
+
+/* Log */
+.elog{background:#070b14;border-radius:8px;padding:10px;
+  font-family:monospace;font-size:11px;height:200px;
+  overflow-y:auto;color:var(--text)}
+.elog .ln{margin-bottom:3px}
+.tp{color:var(--cyan)}.tg{color:var(--purple)}
+.ta{color:var(--red)}.tn{color:var(--muted)}
+
+/* Flow */
+.flow{display:flex;align-items:center;justify-content:space-around;
+  padding:16px 0;flex-wrap:wrap;gap:8px}
+.fnode{text-align:center;padding:10px 14px;border-radius:10px;
+  border:1px solid var(--border);min-width:75px}
+.ficon{font-size:22px;margin-bottom:4px}
+.fname{font-size:10px;color:var(--muted)}
+.fip{font-size:9px;color:var(--accent);font-family:monospace}
+.farr{display:flex;flex-direction:column;align-items:center;gap:2px}
+.aline{width:50px;height:2px;background:var(--border)}
+.aline.active{background:var(--accent)}
+.aline.attack{background:var(--red);animation:pulse .5s infinite}
+.albl{font-size:9px;color:var(--muted)}
+.atk-box{display:none;text-align:center;padding:8px;
+  background:#450a0a;border-radius:8px;margin-top:8px;
+  color:var(--red);font-size:12px}
+
+canvas{max-height:200px}
+
+/* PFCP stats row */
+.pfcp-row{display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:8px;margin-bottom:12px}
+.pstat{text-align:center;padding:8px;background:#070b14;
+  border-radius:8px}
+.pstat .pv{font-size:20px;font-weight:700}
+.pstat .pk{font-size:10px;color:var(--muted)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <h1>5G Slice Security Monitor</h1>
+      <p>Open5GS · UERANSIM · Rule-Based Detection — ogstun (10.45+10.46/16)</p>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="dot ok" id="dot"></div>
+      <span style="font-size:11px" id="connTxt">Connecting...</span>
+    </div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Stat Cards -->
+  <div class="stats-row">
+    <div class="scard">
+      <div class="lbl">📱 Total UE Sessions</div>
+      <div class="val vb" id="totalSess">0</div>
+      <div class="sub">eMBB: <span id="embbSessH">0</span> · IoT: <span id="iotSessH">0</span></div>
+    </div>
+    <div class="scard">
+      <div class="lbl">⚡ PFCP Messages</div>
+      <div class="val vb" id="pfcpTotal">0</div>
+      <div class="sub">Mod Req: <span id="pfcpMod">0</span></div>
+    </div>
+    <div class="scard">
+      <div class="lbl">⚠️ Security Alerts</div>
+      <div class="val vr" id="alertCount">0</div>
+      <div class="sub">Critical: <span id="critCount">0</span></div>
+    </div>
+    <div class="scard">
+      <div class="lbl">🔐 Detection Status</div>
+      <div class="val vg" id="detectStatus">✅ Normal</div>
+      <div class="sub">Rule-based engine active</div>
+    </div>
+  </div>
+
+  <!-- Flow Diagram -->
+  <div class="card">
+    <div class="ch">
+      <span class="ct">📡 Traffic Flow — UE → gNB → UPF → Internet</span>
+      <span class="badge bb" id="flowBadge">Live</span>
+    </div>
+    <div class="flow">
+      <div class="fnode">
+        <div class="ficon">📱</div>
+        <div class="fname">UE (VM2)</div>
+        <div class="fip" id="ueIpFlow">10.45/46.0.x</div>
+      </div>
+      <div class="farr">
+        <div class="aline active" id="a1"></div>
+        <div class="albl">NAS/RRC</div>
+      </div>
+      <div class="fnode">
+        <div class="ficon">📡</div>
+        <div class="fname">gNB (VM2)</div>
+        <div class="fip">192.168.139.140</div>
+      </div>
+      <div class="farr">
+        <div class="aline active" id="a2"></div>
+        <div class="albl">GTP-U:2152</div>
+      </div>
+      <div class="fnode" style="border-color:var(--accent)">
+        <div class="ficon">🔄</div>
+        <div class="fname">UPF (ogstun)</div>
+        <div class="fip">127.0.0.10</div>
+      </div>
+      <div class="farr">
+        <div class="aline" id="a3"></div>
+        <div class="albl">PFCP:8805</div>
+      </div>
+      <div class="fnode">
+        <div class="ficon">⚙️</div>
+        <div class="fname">SMF</div>
+        <div class="fip">127.0.0.4</div>
+      </div>
+      <div class="farr">
+        <div class="aline active" id="a4"></div>
+        <div class="albl">N6/Internet</div>
+      </div>
+      <div class="fnode">
+        <div class="ficon">🌐</div>
+        <div class="fname">Internet</div>
+        <div class="fip">8.8.8.8</div>
+      </div>
+    </div>
+    <div class="atk-box" id="atkBox">
+      ⚠️ PFCP ATTACK — Traffic redirected to 🏴‍☠️ Attacker (192.168.139.134)
+    </div>
+  </div>
+
+  <!-- Slices Panel (FULL WIDTH now) -->
+  <div class="card">
+    <div class="ch">
+      <span class="ct">🔷 Network Slices — Interface: ogstun</span>
+      <span class="badge bg">Active</span>
+    </div>
+    <div class="slice-grid">
+      <!-- eMBB -->
+      <div class="sc sc-embb">
+        <div class="sn">🔵 Slice 1 — eMBB</div>
+        <div class="sm"><span class="k">SST</span><span class="v">1</span></div>
+        <div class="sm"><span class="k">Subnet</span><span class="v" style="font-size:10px">10.45.0.0/16</span></div>
+        <div class="sm"><span class="k">Interface</span><span class="v">ogstun</span></div>
+        <div class="sm"><span class="k">UE Sessions</span><span class="v vb" id="embbSess">0</span></div>
+        <div class="sm"><span class="k">BPS ↓</span><span class="v" id="embbIn">0</span></div>
+        <div class="sm"><span class="k">BPS ↑</span><span class="v" id="embbOut">0</span></div>
+        <div class="pbar"><div class="pfill" id="embbBar" style="width:0%;background:var(--accent)"></div></div>
+        <div class="ses-list" id="embbSesList"></div>
+      </div>
+      <!-- IoT -->
+      <div class="sc sc-iot">
+        <div class="sn">🟣 Slice 2 — IoT</div>
+        <div class="sm"><span class="k">SST</span><span class="v">2</span></div>
+        <div class="sm"><span class="k">Subnet</span><span class="v" style="font-size:10px">10.46.0.0/16</span></div>
+        <div class="sm"><span class="k">SD</span><span class="v">000002</span></div>
+        <div class="sm"><span class="k">UE Sessions</span><span class="v vb" id="iotSess">0</span></div>
+        <div class="sm"><span class="k">Interface</span><span class="v">ogstun (shared)</span></div>
+        <div class="sm"><span class="k">Status</span><span class="v" id="iotStatus">idle</span></div>
+        <div class="pbar"><div class="pfill" id="iotBar" style="width:0%;background:var(--purple)"></div></div>
+        <div class="ses-list" id="iotSesList"></div>
+      </div>
+    </div>
+    <!-- Traffic chart -->
+    <div style="margin-top:16px"><canvas id="trafficChart"></canvas></div>
+  </div>
+
+  <!-- Alerts + PFCP -->
+  <div class="g2">
+    <!-- Alerts -->
+    <div class="card">
+      <div class="ch">
+        <span class="ct">🚨 Security Alerts</span>
+        <span class="badge br" id="alertBadge">0</span>
+      </div>
+      <div class="al" id="alertList">
+        <div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">
+          No alerts — System secure ✅
+        </div>
+      </div>
+    </div>
+
+    <!-- PFCP Monitor -->
+    <div class="card">
+      <div class="ch">
+        <span class="ct">⚡ PFCP Signaling Monitor</span>
+        <span class="badge bb" id="pfcpBadge">0</span>
+      </div>
+      <div class="pfcp-row">
+        <div class="pstat">
+          <div class="pv vb" id="pfcpTotalD">0</div>
+          <div class="pk">Total Messages</div>
+        </div>
+        <div class="pstat">
+          <div class="pv vy" id="pfcpModD">0</div>
+          <div class="pk">Mod Requests</div>
+        </div>
+        <div class="pstat">
+          <div class="pv vr" id="pfcpInjD">0</div>
+          <div class="pk">🚨 Injections</div>
+        </div>
+      </div>
+      <canvas id="pfcpChart" style="margin-bottom:10px"></canvas>
+      <div class="elog" id="pfcpLog"></div>
+    </div>
+  </div>
+
+  <!-- GTP + Live Log -->
+  <div class="g2">
+    <div class="card">
+      <div class="ch">
+        <span class="ct">🔗 GTP-U Tunnel Analysis</span>
+        <span class="badge bb" id="gtpBadge">0</span>
+      </div>
+      <div class="g3" style="margin-bottom:12px">
+        <div class="pstat">
+          <div class="pv vb" id="gtpEmbb">0</div>
+          <div class="pk">eMBB pkts</div>
+        </div>
+        <div class="pstat">
+          <div class="pv" style="color:var(--purple)" id="gtpIot">0</div>
+          <div class="pk">IoT pkts</div>
+        </div>
+        <div class="pstat">
+          <div class="pv vr" id="gtpCross">0</div>
+          <div class="pk">Cross-Slice</div>
+        </div>
+      </div>
+      <canvas id="gtpChart"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <span class="ct">📋 Live Event Log</span>
+        <button onclick="document.getElementById('liveLog').innerHTML=''"
+                style="font-size:10px;padding:2px 8px;background:var(--border);
+                border:none;border-radius:4px;color:var(--muted);cursor:pointer">
+          Clear
+        </button>
+      </div>
+      <div class="elog" id="liveLog"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = window.location.origin;
+let ws = null;
+
+// ── Helpers ──────────────────────────────────────────────
+const fmtB = b => b<1024?b+' B/s':b<1048576?(b/1024).toFixed(1)+' KB/s':(b/1048576).toFixed(2)+' MB/s';
+const fmtT = iso => iso?iso.slice(11,19):'--:--:--';
+const MAX = 60;
+function push(arr, v){ arr.push(v); if(arr.length>MAX) arr.shift(); }
+
+// ── Clock ────────────────────────────────────────────────
+setInterval(()=>{ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB'); },1000);
+
+// ── Charts ───────────────────────────────────────────────
+function mkChart(id, datasets){
+  return new Chart(document.getElementById(id),{
+    type:'line', data:{labels:[], datasets},
+    options:{ responsive:true, animation:false,
+      plugins:{legend:{labels:{color:'#6b7280',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#374151',maxTicksLimit:6,font:{size:9}}, grid:{color:'#1f2937'}},
+        y:{ticks:{color:'#6b7280',font:{size:9}}, grid:{color:'#1f2937'}}
+      }
+    }
+  });
+}
+
+const tChart = mkChart('trafficChart',[
+  {label:'ogstun BPS↓',data:[],borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)',fill:true,tension:.3,pointRadius:0},
+  {label:'ogstun BPS↑',data:[],borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.1)',fill:true,tension:.3,pointRadius:0},
+]);
+const pChart = mkChart('pfcpChart',[
+  {label:'Total',data:[],borderColor:'#06b6d4',pointRadius:0,tension:.3},
+  {label:'Mod Req',data:[],borderColor:'#f59e0b',pointRadius:0,tension:.3},
+  {label:'Injections',data:[],borderColor:'#ef4444',pointRadius:0,tension:.3},
+]);
+const gChart = mkChart('gtpChart',[
+  {label:'eMBB',data:[],borderColor:'#3b82f6',pointRadius:0,tension:.3},
+  {label:'IoT', data:[],borderColor:'#8b5cf6',pointRadius:0,tension:.3},
+  {label:'Cross',data:[],borderColor:'#ef4444',pointRadius:0,tension:.3},
+]);
+
+const tLbls=[],tIn=[],tOut=[];
+const pLbls=[],pTot=[],pMod=[],pInj=[];
+const gLbls=[],gE=[],gI=[],gC=[];
+
+function upChart(chart,lbls,...sets){
+  chart.data.labels=[...lbls];
+  sets.forEach((d,i)=>chart.data.datasets[i].data=[...d]);
+  chart.update('none');
+}
+
+// ── Update slices ────────────────────────────────────────
+function upSlices(s, sessions){
+  const e=s.eMBB||{}, io=s.IoT||{};
+  const embbN = e.ue_sessions||0;
+  const iotN  = io.ue_sessions||0;
+
+  document.getElementById('embbSess').textContent = embbN;
+  document.getElementById('iotSess').textContent  = iotN;
+  document.getElementById('embbSessH').textContent= embbN;
+  document.getElementById('iotSessH').textContent = iotN;
+  document.getElementById('totalSess').textContent= embbN+iotN;
+  document.getElementById('embbIn').textContent   = fmtB(e.bps_in||0);
+  document.getElementById('embbOut').textContent  = fmtB(e.bps_out||0);
+  document.getElementById('iotStatus').textContent= iotN>0?'active':'idle';
+  document.getElementById('iotStatus').style.color= iotN>0?'var(--green)':'var(--muted)';
+
+  const tot=(e.bps_in||0)+(e.bps_out||0)||1;
+  document.getElementById('embbBar').style.width=Math.min(100,(e.bps_in||0)/tot*100)+'%';
+  document.getElementById('iotBar').style.width=iotN>0?'30%':'0%';
+
+  const sList = sessions?sessions.sessions||{}:{};
+  const embbEl = document.getElementById('embbSesList');
+  const iotEl  = document.getElementById('iotSesList');
+  const embbSes = Object.entries(sList).filter(([,v])=>v.slice==='eMBB');
+  const iotSes  = Object.entries(sList).filter(([,v])=>v.slice==='IoT');
+
+  embbEl.innerHTML = embbSes.length ? embbSes.map(([seid,v])=>`
+    <div class="ses-item">
+      <span class="ses-ip">${v.ip}</span>
+      <span class="ses-sl sl-embb">eMBB</span>
+      <span class="ses-seid">${seid}</span>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:10px;padding:4px">No active sessions</div>';
+
+  iotEl.innerHTML = iotSes.length ? iotSes.map(([seid,v])=>`
+    <div class="ses-item">
+      <span class="ses-ip">${v.ip}</span>
+      <span class="ses-sl sl-iot">IoT</span>
+      <span class="ses-seid">${seid}</span>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:10px;padding:4px">No active sessions</div>';
+
+  if(embbSes.length) document.getElementById('ueIpFlow').textContent=embbSes[0][1].ip;
+  else if(iotSes.length) document.getElementById('ueIpFlow').textContent=iotSes[0][1].ip;
+
+  const now=new Date().toLocaleTimeString('en-GB');
+  push(tLbls,now); push(tIn,e.bps_in||0); push(tOut,e.bps_out||0);
+  upChart(tChart,tLbls,tIn,tOut);
+}
+
+// ── Update alerts ────────────────────────────────────────
+function upAlerts(data){
+  const alerts=data.alerts||[];
+  const crit=data.critical||0;
+  document.getElementById('alertCount').textContent=data.count||alerts.length;
+  document.getElementById('critCount').textContent=crit;
+  document.getElementById('alertBadge').textContent=data.count||0;
+
+  const el=document.getElementById('alertList');
+  if(!alerts.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">No alerts — System secure ✅</div>';
+    return;
+  }
+  el.innerHTML=alerts.slice(0,25).map(a=>`
+    <div class="ai2">
+      <span class="asev sc-${(a.severity||'high').toLowerCase()}">${a.severity||'HIGH'}</span>
+      <div class="ab">
+        <div class="an">${a.alert||a.event||'Alert'}</div>
+        <div class="at">${fmtT(a.timestamp)} · ${a.src||a.source||''} ${a.detail?'· '+a.detail:''}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Update PFCP ──────────────────────────────────────────
+function upPFCP(data){
+  const tot=parseInt(data.count||0);
+  const mod=parseInt(data.mod_req||0);
+  const inj=parseInt(data.injections||0);
+  document.getElementById('pfcpTotal').textContent=tot;
+  document.getElementById('pfcpMod').textContent=mod;
+  document.getElementById('pfcpBadge').textContent=tot;
+  document.getElementById('pfcpTotalD').textContent=tot;
+  document.getElementById('pfcpModD').textContent=mod;
+  document.getElementById('pfcpInjD').textContent=inj;
+
+  if(inj>0){
+    document.getElementById('pfcpInjD').style.color='var(--red)';
+    appendLog(`🚨 PFCP INJECTION x${inj} detected!`,'a');
+  }
+
+  const now=new Date().toLocaleTimeString('en-GB');
+  push(pLbls,now); push(pTot,tot); push(pMod,mod); push(pInj,inj);
+  upChart(pChart,pLbls,pTot,pMod,pInj);
+
+  const log=document.getElementById('pfcpLog');
+  const evts=(data.events||[]).slice(0,8);
+  log.innerHTML=evts.map(e=>`
+    <div class="ln tp">[${fmtT(e.timestamp)}] ${e.msg_name||'?'} ${e.src}→${e.dst} SEID=${e.seid||'N/A'}</div>
+  `).join('');
+}
+
+// ── Update GTP ───────────────────────────────────────────
+function upGTP(data){
+  const tot=parseInt(data.total||0);
+  const e=parseInt(data.embb_pkts||0);
+  const io=parseInt(data.iot_pkts||0);
+  const cr=parseInt(data.cross_slice||0);
+  document.getElementById('gtpBadge').textContent=tot;
+  document.getElementById('gtpEmbb').textContent=e;
+  document.getElementById('gtpIot').textContent=io;
+  document.getElementById('gtpCross').textContent=cr;
+
+  const now=new Date().toLocaleTimeString('en-GB');
+  push(gLbls,now); push(gE,e); push(gI,io); push(gC,cr);
+  upChart(gChart,gLbls,gE,gI,gC);
+}
+
+// ── Live Log ─────────────────────────────────────────────
+function appendLog(msg, type='n'){
+  const el=document.getElementById('liveLog');
+  const d=document.createElement('div');
+  d.className=`ln t${type}`;
+  d.textContent=`[${new Date().toLocaleTimeString('en-GB')}] ${msg}`;
+  el.appendChild(d);
+  if(el.children.length>300) el.removeChild(el.firstChild);
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── Update detection status (simple rule-based) ──────────
+function upDetectionStatus(hasAttack){
+  const el = document.getElementById('detectStatus');
+  const badge = document.getElementById('flowBadge');
+  const atkBox = document.getElementById('atkBox');
+  const arrows = ['a1','a2','a3','a4'].map(id=>document.getElementById(id));
+  
+  if(hasAttack){
+    el.textContent = '🚨 ATTACK DETECTED';
+    el.className = 'val vr';
+    badge.textContent = '⚠️ ATTACK';
+    badge.className = 'badge br';
+    arrows.forEach(a=>a.className='aline attack');
+    atkBox.style.display = 'block';
+  } else {
+    el.textContent = '✅ Normal';
+    el.className = 'val vg';
+    badge.textContent = 'Live';
+    badge.className = 'badge bb';
+    arrows.forEach(a=>a.className='aline active');
+    atkBox.style.display = 'none';
+  }
+}
+
+// ── WebSocket ────────────────────────────────────────────
+function connectWS(){
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  
+  ws.onopen = () => {
+    document.getElementById('dot').className = 'dot ok';
+    document.getElementById('connTxt').textContent = 'Connected';
+    appendLog('WebSocket connected', 'n');
+  };
+  
+  ws.onmessage = evt => {
+    try {
+      const d = JSON.parse(evt.data);
+      if (d.type !== 'update') return;
+      
+      if (d.slices)   upSlices(d.slices, d.sessions);
+      if (d.alerts)   upAlerts(d.alerts);
+      if (d.pfcp)     upPFCP(d.pfcp);
+      if (d.gtp)      upGTP(d.gtp);
+      
+      // Détection simple : attaque si injections PFCP > 0 OU alertes critiques
+      const hasAttack = (d.pfcp?.injections > 0) || 
+                        (d.alerts?.critical > 0) ||
+                        (d.alerts?.alerts?.some(a => a.severity === 'CRITICAL'));
+      upDetectionStatus(hasAttack);
+      
+      // Log des alertes importantes
+      if(d.alerts?.alerts?.length){
+        d.alerts.alerts.slice(0,3).forEach(a=>{
+          if(a.severity==='CRITICAL') appendLog(`🚨 ${a.alert}: ${a.detail||''}`, 'a');
+        });
+      }
+      
+    } catch (e) {
+      console.error('[WS] Parse error:', e);
+      appendLog(`[WS Error] ${e.message || 'Unknown error'}`, 'a');
+    }
+  };
+  
+  ws.onclose = () => {
+    document.getElementById('dot').className = 'dot err';
+    document.getElementById('connTxt').textContent = 'Reconnecting...';
+    appendLog('WebSocket disconnected — retry in 3s', 'a');
+    setTimeout(connectWS, 3000);
+  };
+  
+  ws.onerror = (err) => {
+    console.error('[WS] Connection error:', err);
+    appendLog('WebSocket error — check console', 'a');
+  };
+}
+
+// ── Polling fallback ─────────────────────────────────────
+async function poll(){
+  try{
+    const [slices,alerts,pfcp,gtp,sessions] = await Promise.all([
+      fetch(API+'/api/slices').then(r=>r.json()),
+      fetch(API+'/api/alerts').then(r=>r.json()),
+      fetch(API+'/api/pfcp/events').then(r=>r.json()),
+      fetch(API+'/api/gtp/events').then(r=>r.json()),
+      fetch(API+'/api/sessions').then(r=>r.json()),
+    ]);
+    upSlices(slices,sessions);
+    upAlerts(alerts);
+    upPFCP(pfcp);
+    upGTP(gtp);
+    
+    const hasAttack = (pfcp.injections > 0) || (alerts.critical > 0);
+    upDetectionStatus(hasAttack);
+  }catch(e){ appendLog('API error: '+e.message,'a'); }
+}
+
+// ── Init ─────────────────────────────────────────────────
+connectWS();
+poll();
+setInterval(poll,2000);
+appendLog('5G Slice Security Monitor (Rule-Based) started','n');
+</script>
+</body>
+</html>

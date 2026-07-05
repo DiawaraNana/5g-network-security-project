@@ -1,0 +1,25 @@
+mcc: '001'          # Mobile Country Code (correspond à Open5GS)
+mnc: '01'           # Mobile Network Code
+nci: '0x000000010'  # NR Cell Identity (must be unique)
+idLength: 32        # NR gNB ID length in bits [22...32]
+tac: 1              # Tracking Area Code
+
+linkIp: 192.168.139.140   # gNB's local IP address for Radio Link Simulation
+ngapIp: 192.168.139.140   # gNB's local IP address for N2 Interface (NGAP)
+gtpIp: 192.168.139.140    # gNB's local IP address for N3 Interface (GTP-U)
+
+# AMF connection
+amfConfigs:
+  - address: 192.168.139.134  # AMF IP address (from Open5GS)
+    port: 38412          # AMF SCTP port (default)
+  
+# Supported S-NSSAI (Network Slices)
+slices:
+  - sst: 1
+  - sst: 2
+    sd: 0x000002
+#  - sst: 3              # mMTC slice
+ #   sd: 0x000003
+
+# Ignore stream ids check (useful for testing)
+ignoreStreamIds: true

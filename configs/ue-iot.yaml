@@ -1,0 +1,54 @@
+supi: 'imsi-001010000000002'
+mcc: '001'
+mnc: '01'
+
+op: 'E8ED289DEBA952E4283B54E88E6183CA'
+opType: 'OPC'
+key: '465B5CE8B199B49FAA5F0A2EE238A6BC'
+amf: '8000'
+
+gnbSearchList:
+  - 192.168.139.140
+
+# UAC
+uacAic:
+  mps: false
+  mcs: false
+uacAcc:
+  normalClass: 0
+  class11: false
+  class12: false
+  class13: false
+  class14: false
+  class15: false
+
+# Sessions 
+sessions:
+  - type: IPv4
+    dnn: iot
+
+# NSSAI (format hexadécimal explicite)
+configured-nssai:
+  - sst: 2
+    sd: 0x000002
+
+default-nssai:
+  - sst: 2
+    sd: 0x000002
+
+# 🔒 Forcez uniquement IA2 & EA2 (AES-128). Évite la sélection de NEA0/NIA0 qui fait crasher v3.2.8
+integrity:
+  IA1: false
+  IA2: true
+  IA3: false
+ciphering:
+  EA1: false
+  EA2: true
+  EA3: false
+
+bands:
+  - 78
+
+integrityMaxRate:
+  uplink: full
+  downlink: full

@@ -1,0 +1,34 @@
+logger:
+  file: /var/log/open5gs/upf.log
+
+upf:
+  upf_name: open5gs-upf
+  sbi:
+    server:
+      - address: 127.0.0.7
+        port: 7777
+    client:
+      nrf:
+        - uri: http://127.0.0.10:7777
+  pfcp:
+    server:
+      - address: 127.0.0.7
+        port: 8805
+    client:
+      smf:
+        - address: 127.0.0.4
+  gtpu:
+    server:
+      - address: 192.168.139.134
+  session:
+    - subnet: 10.45.0.0/16
+      gateway: 10.45.0.1
+      dev: ogstun      
+    - subnet: 10.46.0.0/16
+      gateway: 10.46.0.1
+      dev: ogstun
+  metrics:
+    server:
+      - address: 127.0.0.7
+        port: 9090
+
