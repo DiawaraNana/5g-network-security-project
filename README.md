@@ -323,11 +323,9 @@ open http://192.168.139.134:8080
 
 ---
 
-## Screenshots
+## Demo
 
-| Dashboard — Normal state | Dashboard — Attack detected |
-|:---:|:---:|
-| ![normal](docs/screenshots/normal.png) | ![attack](docs/screenshots/attack.png) |
+| 5G_NETWORK_PROJECT.mp4 in the files
 
 ---
 
