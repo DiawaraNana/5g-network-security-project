@@ -1,4 +1,4 @@
-# 5G Network Security — Attack Simulation & AI-Based Monitoring
+# 5G Network Security — Attack Simulation & Rules-Based Monitoring
 
 > **Academic cybersecurity project** — Université Euromed de Fès (EIDIA)  
 > Supervised by Prof. ZINEDDINE Mhamed
@@ -16,7 +16,7 @@ A complete 5G core network security lab built on **Open5GS** and **UERANSIM**, f
 - [Setup](#setup)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
-- [Screenshots](#screenshots)
+- [Demo](#screenshots)
 
 ---
 
