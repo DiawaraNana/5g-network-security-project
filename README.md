@@ -41,6 +41,7 @@ Network Slices:
   Slice 1 (eMBB)  SST=1  →  10.45.0.0/16  ogstun
   Slice 2 (IoT)   SST=2  →  10.46.0.0/16  ogstun (shared)
 ```
+<img width="515" height="168" alt="image" src="https://github.com/user-attachments/assets/8f2dbebe-077e-48c7-be12-9f5ae5958b61" />
 
 ---
 
